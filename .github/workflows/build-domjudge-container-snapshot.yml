@@ -11,6 +11,9 @@ jobs:
   release-domjudge:
     if: ${{ github.repository == 'domjudge/domjudge-packaging' }}
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,21 +24,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build the container
         run: |
           cd docker
-          ./build.sh bleeding domjudge https://www.domjudge.org/snapshot/domjudge-snapshot-$(date "+%Y%m%d").tar.gz
+          ./build.sh bleeding "ghcr.io/${GITHUB_REPOSITORY_OWNER@L}" https://www.domjudge.org/snapshot/domjudge-snapshot-$(date "+%Y%m%d").tar.gz
           cd ../docker-chroot
-          ./build.sh bleeding domjudge https://www.domjudge.org/snapshot/domjudge-snapshot-$(date "+%Y%m%d").tar.gz
+          ./build.sh bleeding "ghcr.io/${GITHUB_REPOSITORY_OWNER@L}" https://www.domjudge.org/snapshot/domjudge-snapshot-$(date "+%Y%m%d").tar.gz
 
       - name: Check the created domserver container
-        run: .github/jobs/check-domjudge-container.sh bleeding  "domjudge"
+        run: .github/jobs/check-domjudge-container.sh bleeding "ghcr.io/${GITHUB_REPOSITORY_OWNER@L}"
 
       - name: Collect docker logs on failure
         if: ${{ !cancelled() }}
@@ -54,5 +58,5 @@ jobs:
         # We assume that we tested the container here and if anything is wrong that we exit early
         run: |
           for IMG in domserver judgehost; do
-            docker push domjudge/$IMG:bleeding
+            docker push ghcr.io/${GITHUB_REPOSITORY_OWNER@L}/$IMG:bleeding
           done
