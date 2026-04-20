@@ -2,8 +2,14 @@
 
 set -euo pipefail
 
-# Usage: https://github.com/DOMjudge/domjudge/blob/main/misc-tools/dj_make_chroot.in#L58-L87
+# Build the base chroot
 /opt/domjudge/judgehost/bin/dj_make_chroot
+
+# --- ADDED FOR SQL CHALLENGES ---
+echo "[..] Installing SQLite3 into the chroot"
+chroot /chroot apt-get update
+chroot /chroot apt-get install -y sqlite3
+# --------------------------------
 
 cd /
 echo "[..] Compressing chroot"
